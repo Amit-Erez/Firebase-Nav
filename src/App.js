@@ -1,7 +1,8 @@
 import "./App.css";
 import React, { useState } from "react";
 import Logo from "./assets/Frontend-Logo.png";
-import { auth } from "./firebase/init";
+import { auth, db } from "./firebase/init";
+import { collection, addDoc, getDocs, getDoc, doc, query, where, updateDoc, deleteDoc } from "firebase/firestore";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -15,6 +16,56 @@ import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 function App() {
   const [user, setUser] = React.useState({});
   const [loading, setLoading] = React.useState(true);
+
+  async function updatePost() {
+    const hardcodedId = "AAKYGNUKUkK3L0syk6lB"
+    const postRef = doc(db, "posts", hardcodedId);
+    const post = await getPostById(hardcodedId)
+    console.log(post)
+    const newPost = {
+      ...post,
+      title: "Land a $400k job",
+      value: "Nez",
+    };
+    console.log(newPost)
+    updateDoc(postRef, newPost);
+  }
+
+  function deletePost() {
+  const hardcodedId = "AAKYGNUKUkK3L0syk6lB"
+  const postRef = doc(db, "posts", hardcodedId); 
+  deleteDoc(postRef)
+  }
+
+  function createPost() {
+    const post = {
+      title: "Finish Interview Section",
+      description: "Finish FES",
+      uid: user.uid,
+    };
+    addDoc(collection(db, "posts"), post)
+  }
+
+  async function getAllPosts() {
+    const {docs} = await getDocs(collection(db, "posts"));
+    const posts = docs.map((elem) => ({...elem.data(), id:elem.id}));
+    console.log(posts)
+  }
+
+  async function getPostById(id) {
+    const postRef = doc(db, "posts", id);
+    const postSnap = await getDoc(postRef)
+    return postSnap.data()
+  }
+
+  async function getPostByUid() {
+    const postCollectionRef = await query(
+      collection(db, "posts"),
+      where("uid", "==", user.uid)
+    );
+    const {docs} = await getDocs(postCollectionRef);
+    console.log(docs.map((doc) => doc.data()));
+  }
 
   React.useEffect(() => {
     onAuthStateChanged(auth, (user) => {
@@ -99,6 +150,12 @@ function App() {
           </div>
         </nav>
       )}
+      <button onClick={createPost}>Create Post</button><br />
+      <button onClick={getAllPosts}>Get All Posts</button><br />
+      <button onClick={getPostById}>Get Post By Id</button><br />
+      <button onClick={getPostByUid}>Get Post By Uid</button><br />
+      <button onClick={updatePost}>Update Post</button><br />
+      <button onClick={deletePost}>Delete Post</button><br />
     </div>
   );
 }
